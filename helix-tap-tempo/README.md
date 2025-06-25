@@ -20,6 +20,8 @@ Note: I don't use the f8 hardware clock functionality as this really does not pl
 
 I've modified the script extensively, and while I don't understand half of the what it's doing, it appears to work for me and might help someone else in a similar boat.
 
+_**The version I use and is reflected below is: [gp5_helix_taptempo_limited_taps_var.gpscript](gp5_helix_taptempo_limited_taps_var.gpscript)**_
+
 ## Screenshots:
 
 - **Global Rackspace Wiring:**
