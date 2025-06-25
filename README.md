@@ -1,2 +1,3 @@
 # gigperformer
-scripts and resources relating to Gig Performer (https://gigperformer.com/)
+
+Scripts and resources relating to Gig Performer (https://gigperformer.com/)

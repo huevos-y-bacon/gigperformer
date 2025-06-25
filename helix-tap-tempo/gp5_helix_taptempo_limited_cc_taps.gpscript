@@ -1,0 +1,187 @@
+// Parameters for CC transmission
+// 0=disable Clock CC, 1=enable Clock CC (i.e. TAP TEMPO)
+var sendCC : Subrange Parameter 0..1 = 1
+// 0=normal, 1=reset CC counter and send delayed CC
+var resetCC : Subrange Parameter 0..1 = 0
+
+// Parameter to adjust timing offset (0-50ms early send)
+var tune : Subrange Parameter 0..50 = 18
+// Read-only parameter showing maximum late timing deviation as fraction of beat
+var plus ("Late") : Continuous Parameter = 0.0
+// Read-only parameter showing maximum early timing deviation as fraction of beat
+var minus ("Early") : Continuous Parameter = 0.0
+
+// MIDI CC number that triggers beat events (Tap Tempo CC).
+// Make sure the MIDI IN block does not block CC64 sustain pedal events - Helix tap tempo uses CC64
+const MIDI_TAPTEMPO_CC : integer = 64
+// MIDI CC number that triggers CC counter reset (from Local GP MIDI port).
+// Make sure the MIDI IN block does not block CC65 portamento events - MIDI_RESET_CC uses CC65
+const MIDI_RESET_CC : integer = 65
+// MIDI channel for tap tempo messages
+const MIDI_TAPTEMPO_CHN : integer = 16
+
+// Millisecond intervals
+// Time duration of one quarter note beat
+var beat : double = 0.0
+
+// Static MIDI messages
+// Pre-built Clock CC beat marker message
+var cc : midiMessage
+
+// Stats
+// Timestamp of last beat event for timing analysis
+var blast : double = 0.0
+
+// CC send limiting variables
+// Count of CC messages sent since script start
+var ccSentCount : integer = 0
+// Only send CC x times after startup
+const MAX_CC_SENDS : integer = 8
+
+// Function to calculate and update timing statistics
+Function SetStats()
+    // Get current time in milliseconds
+    var now : double = TimeSinceStartup()
+    // Initialize timing deviation variable
+    var delta : double = 0.0
+    // Only calculate if we have a previous beat time
+    If blast <> 0.0 Then
+        // Calculate timing error as fraction of beat
+        delta = (now - blast - beat) / beat
+        // If this deviation is more late than previous max
+        If plus < delta Then
+            // Update maximum late deviation
+            plus = delta
+        // If this deviation is more early than previous max
+        elsif minus < -delta Then
+            // Update maximum early deviation (store as positive)
+            minus = -delta
+        End
+    End
+    // Store current time for next calculation
+    blast = now
+End
+
+// Function to calculate timing intervals based on current BPM
+Function SetIntervals()
+    // Convert BPM to beats per second
+    var bps : double = GetBPM()/60
+    // Calculate milliseconds per beat
+    beat = (1000/bps)
+End
+
+// Event handler: when sendCC parameter changes, reset stats
+On ParameterValueChanged matching sendCC
+    // Recalculate intervals with current BPM
+    SetIntervals()
+    // Reset timing statistics
+    blast = 0.0
+    // Reset late timing statistic
+    plus = 0.0
+    // Reset early timing statistic
+    minus = 0.0
+End
+
+// Event handler: when tune parameter changes, recalculate timing
+On ParameterValueChanged matching tune
+    // Recalculate intervals with current BPM
+    SetIntervals()
+End
+
+// Event handler: when Tap Tempo CC is received on channel 16, generate CC response
+On ControlChangeEvent(m : ControlChangeMessage) Matching MIDI_TAPTEMPO_CC
+    // Only respond to messages on channel 16
+    If GetChannel(m) == MIDI_TAPTEMPO_CHN Then
+        // Send CC message only if sendCC is enabled AND we haven't exceeded the limit
+        // Check if CC sending is enabled and under limit
+        If sendCC >= 1 And ccSentCount < MAX_CC_SENDS Then
+            // Send Tap Tempo CC back out, advanced by 'tune' milliseconds
+            SendLater(cc,beat-tune)
+            // Increment the counter
+            ccSentCount = ccSentCount + 1
+        End
+        // Recalculate intervals in case BPM changed
+        SetIntervals()
+        // Update timing statistics (always calculate for monitoring)
+        SetStats()
+    End
+End
+
+// Event handler: when Reset CC is received, reset CC counter and send delayed CC
+On ControlChangeEvent(m : ControlChangeMessage) Matching MIDI_RESET_CC
+    // Only respond to messages on channel 16
+    If GetChannel(m) == MIDI_TAPTEMPO_CHN Then
+        // Reset CC send counter for new song
+        ccSentCount = 0
+        // Recalculate intervals for new song
+        SetIntervals()
+        // Reset timing statistics
+        blast = 0.0
+        // Reset late timing statistic
+        plus = 0.0
+        // Reset early timing statistic
+        minus = 0.0
+
+        // Send initial CC after 300ms delay if sendCC is enabled
+        If sendCC >= 1 Then
+            // Send initial Tap Tempo CC after 300ms delay
+            SendLater(cc, 300)
+            // Count this as the first send
+            ccSentCount = ccSentCount + 1
+        End
+        SetDisplayMessage("CC counter reset via MIDI CC65")
+    End
+End
+
+// Event handler: when resetCC parameter changes, reset counter and send delayed CC
+On ParameterValueChanged matching resetCC
+    If resetCC >= 1 Then
+        // Reset CC send counter for new song
+        ccSentCount = 0
+        // Recalculate intervals for new song
+        SetIntervals()
+        // Reset timing statistics
+        blast = 0.0
+        // Reset late timing statistic
+        plus = 0.0
+        // Reset early timing statistic
+        minus = 0.0
+
+        // Send initial CC after 300ms delay if sendCC is enabled
+        If sendCC >= 1 Then
+            // Send initial Tap Tempo CC after 300ms delay
+            SendLater(cc, 300)
+            // Count this as the first send
+            ccSentCount = ccSentCount + 1
+        End
+        SetDisplayMessage("CC counter reset - new song ready")
+        // Auto-reset the parameter back to 0
+        resetCC = 0
+    End
+End
+
+// Called automatically after script is loaded
+Initialization
+    // Create Tap Tempo CC, value 127, channel 16
+    cc = MakeControlChangeMessageEx(MIDI_TAPTEMPO_CC,127,MIDI_TAPTEMPO_CHN)
+    // Calculate initial timing intervals
+    SetIntervals()
+    // Initialize CC send counter
+    ccSentCount = 0
+
+    // Send initial CC after 300ms delay if sendCC is enabled
+    If sendCC >= 1 Then
+        // Send initial Tap Tempo CC after 300ms delay
+        SendLater(cc, 300)
+        // Count this as the first send
+        ccSentCount = ccSentCount + 1
+    End
+
+    // Reset last beat timestamp
+    blast = 0.0
+    // Reset late timing statistic
+    plus = 0.0
+    // Reset early timing statistic
+    minus = 0.0
+    SetDisplayMessage("MIDI Tap Tempo Script Enabled - CC limited sends")
+End

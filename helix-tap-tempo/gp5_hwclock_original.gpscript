@@ -1,0 +1,80 @@
+// Declare a parameter representing a set of strings
+var enable : Subrange Parameter 0..127 = 0 // Discrete named parameters
+var tune : Subrange Parameter 0..50 = 0
+
+var plus ("Late") : Continuous Parameter = 0.0
+var minus ("Early") : Continuous Parameter = 0.0
+
+
+const MIDI_CLOCK_BEAT : integer = 117
+const MIDI_CLOCK_CHN : integer = 16
+const MIDI_CLOCK_MSG : Integer = 248
+const MIDI_CLOCK_QTR : Integer = 24
+
+// Millisecond intervals 
+var subBeat : double = 0.0
+var beat : double = 0.0
+
+// Static MIDI messages
+var clock : midiMessage
+var cc : midiMessage
+
+// Stats
+var cdmax : double = 0.0
+var cdmin : double = 0.0
+var blast : double = 0.0
+
+Function SetStats()
+    var now : double = TimeSinceStartup()
+    var delta : double = 0.0
+    If blast <> 0.0 Then
+        delta = (now - blast - beat) / beat
+        If plus < delta Then
+            plus = delta
+        elsif minus < -delta Then
+            minus = -delta
+        End
+    End
+    blast = now
+End
+
+Function SetIntervals()
+    var bps : double = GetBPM()/60
+    beat = (1000/bps)
+    subBeat = beat/MIDI_CLOCK_QTR
+End
+
+On ParameterValueChanged matching enable
+    SetIntervals()
+    if enable >= 64 Then
+        SendNow(cc)
+        blast = 0.0
+        plus = 0.0
+        minus = 0.0
+    End
+End
+
+On ParameterValueChanged matching tune
+    SetIntervals()
+End
+
+On ControlChangeEvent(m : ControlChangeMessage) Matching MIDI_CLOCK_BEAT
+    var n : integer
+    if GetChannel(m) == MIDI_CLOCK_CHN Then
+        for n=0; n< MIDI_CLOCK_QTR; n=n+1 Do
+            SendLater(clock, (subBeat*n)+(subBeat/2))
+        End
+        If enable >= 64 Then
+            SendLater(cc,beat-tune)
+        End
+        SetIntervals() 
+        SetStats()
+    End
+End
+
+// Called automatically after script is loaded
+Initialization
+    clock = MakeMidiMessage1(MIDI_CLOCK_MSG)
+    cc = MakeControlChangeMessageEx(MIDI_CLOCK_BEAT,127,MIDI_CLOCK_CHN)
+    SetIntervals()
+End

@@ -1,0 +1,103 @@
+// Parameters for selective enabling of clock and CC transmission
+var sendClock : Subrange Parameter 0..1 = 0    // 0=disable F8 clock, 1=enable F8 clock
+var sendCC : Subrange Parameter 0..1 = 1       // 0=disable Clock CC, 1=enable Clock CC
+
+var tune : Subrange Parameter 0..50 = 0             // Parameter to adjust timing offset (0-50ms early send)
+var plus ("Late") : Continuous Parameter = 0.0      // Read-only parameter showing maximum late timing deviation as fraction of beat
+var minus ("Early") : Continuous Parameter = 0.0    // Read-only parameter showing maximum early timing deviation as fraction of beat
+
+const MIDI_CLOCK_CC : integer = 64  // MIDI CC number that triggers beat events (Clock CC). Make sure the MIDI IN block does not block sustain pedal events - Helix tap tempo uses CC64
+const MIDI_CLOCK_CHN : integer = 16     // MIDI channel for clock messages
+const MIDI_CLOCK_MSG : Integer = 248    // MIDI Clock message byte value (0xF8 = 248 decimal)
+const MIDI_CLOCK_QTR : Integer = 24     // Standard MIDI clocks per quarter note (always 24)
+
+// Millisecond intervals 
+var subBeat : double = 0.0  // Time between individual F8 clock messages
+var beat : double = 0.0     // Time duration of one quarter note beat
+
+// Static MIDI messages
+var clock : midiMessage // Pre-built F8 clock message
+var cc : midiMessage    // Pre-built Clock CC beat marker message
+
+// Stats
+var blast : double = 0.0    // Timestamp of last beat event for timing analysis
+
+// Function to calculate and update timing statistics
+Function SetStats()
+    var now : double = TimeSinceStartup()   // Get current time in milliseconds
+    var delta : double = 0.0                // Initialize timing deviation variable
+    If blast <> 0.0 Then                    // Only calculate if we have a previous beat time
+        delta = (now - blast - beat) / beat // Calculate timing error as fraction of beat
+        If plus < delta Then                // If this deviation is more late than previous max
+            plus = delta                    // Update maximum late deviation
+        elsif minus < -delta Then           // If this deviation is more early than previous max
+            minus = -delta                  // Update maximum early deviation (store as positive)
+        End
+    End
+    blast = now // Store current time for next calculation
+End
+
+// Function to calculate timing intervals based on current BPM
+Function SetIntervals()
+    var bps : double = GetBPM()/60  // Convert BPM to beats per second
+    beat = (1000/bps)               // Calculate milliseconds per beat
+    subBeat = beat/MIDI_CLOCK_QTR   // Calculate milliseconds between F8 clock messages
+End
+
+// Event handler: when sendClock parameter changes, reset stats
+On ParameterValueChanged matching sendClock
+    SetIntervals()  // Recalculate intervals with current BPM
+    blast = 0.0     // Reset timing statistics
+    plus = 0.0      // Reset late timing statistic
+    minus = 0.0     // Reset early timing statistic
+End
+
+// Event handler: when sendCC parameter changes, reset stats and optionally send initial CC
+On ParameterValueChanged matching sendCC
+    SetIntervals()      // Recalculate intervals with current BPM
+    if sendCC >= 1 Then // If CC sending is enabled
+        SendNow(cc)     // Send initial Clock CC immediately
+    End
+    blast = 0.0 // Reset timing statistics
+    plus = 0.0  // Reset late timing statistic
+    minus = 0.0 // Reset early timing statistic
+End
+
+// Event handler: when tune parameter changes, recalculate timing
+On ParameterValueChanged matching tune
+    SetIntervals()  // Recalculate intervals with current BPM
+End
+
+// Event handler: when Clock CC is received on channel 16, generate clock burst
+On ControlChangeEvent(m : ControlChangeMessage) Matching MIDI_CLOCK_CC
+    var n : integer // Loop counter variable
+    if GetChannel(m) == MIDI_CLOCK_CHN Then // Only respond to messages on channel 16
+        // Send F8 clock messages only if sendClock is enabled
+        if sendClock >= 1 Then  // Check if F8 clock sending is enabled
+            for n=0; n< MIDI_CLOCK_QTR; n=n+1 Do    // Loop 24 times (one quarter note)
+                SendLater(clock, (subBeat*n)+(subBeat/2))   // Send F8 clock at calculated intervals, offset by half subBeat
+            End
+        End
+        // Send CC message only if sendCC is enabled
+        if sendCC >= 1 Then         // Check if Clock CC sending is enabled
+            SendLater(cc,beat-tune) // Send Clock CC back out, advanced by 'tune' milliseconds
+        End
+        SetIntervals()  // Recalculate intervals in case BPM changed
+        SetStats()      // Update timing statistics (always calculate for monitoring)
+    End
+End
+
+// Called automatically after script is loaded
+Initialization
+    clock = MakeMidiMessage1(MIDI_CLOCK_MSG)    // Create F8 (248) clock message
+    cc = MakeControlChangeMessageEx(MIDI_CLOCK_CC,127,MIDI_CLOCK_CHN) // Create Clock CC, value 127, channel 16
+    SetIntervals()  // Calculate initial timing intervals
+    // Initialize based on current parameter states
+    if sendCC >= 1 Then // If CC sending is enabled
+        SendNow(cc)     // Send initial Clock CC immediately 
+    End
+    blast = 0.0 // Reset last beat timestamp
+    plus = 0.0  // Reset late timing statistic
+    minus = 0.0 // Reset early timing statistic
+    SetDisplayMessage("MIDI HW Clock Script Enabled")
+End
