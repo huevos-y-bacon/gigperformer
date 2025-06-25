@@ -16,9 +16,9 @@ My Gig file is set up with a setlist of songs. Upon switching to a song, it over
 
 The script also has the "tune" feature to tweak it so that the CC taps come through as close as possibly to the desired tempo.
 
-Note: I don't use the f8 hardware clock functionality as this really does not play well with my Helix, plus the Helix does not let you see the tempo it's attempting to set (while the tap LED flashed blue). With the CC method, the Helix tap and scribble strip behaves as if I'm actually hitting the tap tempo myself (flashing red and displaying the tempo - this allows tweaking with the "tune" variable).
+Note: I don't use the f8 hardware clock functionality as this really does not play well with my Helix, plus the Helix does not let you see the tempo it's attempting to set (while the tap LED flashes blue). With the CC method, the Helix tap and scribble strip behaves as if I'm actually hitting the tap tempo myself (flashing red and displaying the tempo while I'm tapping - this allows tweaking with the "tune" variable).
 
-I've modified the script extensively, and while I don't understand half of the what it's doing, it appears to work for me and might help someone else in a similar boat.
+I've modified the script extensively, and while I don't fully understand half of the what it's doing, it appears to work for me and might help someone else in a similar boat.
 
 _**The version I use and is reflected below is: [gp5_helix_taptempo_limited_taps_var.gpscript](gp5_helix_taptempo_limited_taps_var.gpscript)**_
 
