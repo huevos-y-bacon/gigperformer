@@ -1,0 +1,115 @@
+// Gig Performer Global GPScript - Toggle Song Lyrics/Chords Window with Widget + Time Display
+
+// Declare widget variables
+Var LyricsButton : Widget // Built-in Song Lyrics/Chords
+Var TimeDisplay : Widget  // Time display widget
+Var BPMDisplay : Widget   // BPM display widget
+
+// Variable to track the current state of the lyrics window
+Var lyricsWindowOpen : Boolean
+Var lastUpdateTime : double  // Track when we last updated the display
+
+// Function to update the time display
+Function UpdateTimeDisplay()
+    Var timeString : String
+    Var timeInSeconds : double
+    Var totalHours, hours, minutes : integer
+    Var hoursStr, minutesStr : String
+    
+    // Get current time in milliseconds and convert to seconds
+    timeInSeconds = ClockTime() / 1000.0
+    
+    // Calculate total hours since reference point
+    totalHours = Floor(timeInSeconds / 3600.0)
+    
+    // Get current hour of day (0-23) and add 1 hour offset for timezone
+    // hours = totalHours - ((totalHours / 24) * 24) + 1 // SUMMER TIME
+    hours = totalHours - ((totalHours / 24) * 24) + 0 // WINTER TIME
+    
+    // Handle hour wrap-around (if we go past 23, wrap to 0)
+    If hours >= 24 Then
+        hours = hours - 24
+    End
+    
+    // Calculate minutes
+    minutes = Floor((timeInSeconds - (totalHours * 3600)) / 60.0)
+    
+    // Format each component with leading zeros
+    If hours < 10 Then
+        hoursStr = "0" + IntToString(hours)
+    Else
+        hoursStr = IntToString(hours)
+    End
+    
+    If minutes < 10 Then
+        minutesStr = "0" + IntToString(minutes)
+    Else
+        minutesStr = IntToString(minutes)
+    End
+    
+    // Build final time string (HH:MM format)
+    timeString = hoursStr + ":" + minutesStr
+    SetWidgetLabel(TimeDisplay, timeString)
+End
+
+// Function to update the BPM display
+Function UpdateBPMDisplay()
+    Var currentBPM : double
+    Var bpmString : String
+    
+    // Get current BPM value
+    currentBPM = GetBPM()
+    
+    // Format BPM with 1 decimal place
+    // bpmString = "BPM: " + DoubleToString(currentBPM, 1)
+    bpmString = DoubleToString(currentBPM, 1)
+    
+    SetWidgetLabel(BPMDisplay, bpmString)
+End
+Function ToggleLyrics()
+    If lyricsWindowOpen Then
+        // Close the window
+        ShowChordProWindow(false)
+        lyricsWindowOpen = false
+    Else
+        // Open the window
+        ShowChordProWindow(true)
+        lyricsWindowOpen = true
+    End
+End
+
+// Initialization - set initial state
+Initialization
+    lyricsWindowOpen = false
+    lastUpdateTime = TimeSinceStartup()
+    
+    // Start the global timer system
+    SetTimersRunning(true)
+    
+    UpdateTimeDisplay()  // Initialize time display
+    UpdateBPMDisplay()   // Initialize BPM display
+End
+
+// Callback when the lyrics button widget is activated
+On WidgetValueChanged(newValue : double) from LyricsButton
+    // Toggle the lyrics window when button is pressed (newValue > 0)
+    If newValue > 0.0 Then
+        ToggleLyrics()
+    End
+    // Update displays when any widget interaction happens
+    UpdateTimeDisplay()
+    UpdateBPMDisplay()
+End
+
+// Timer callback - called every ~50ms by GP
+On TimerTick(ms : double)
+    Var currentTime : double
+    currentTime = TimeSinceStartup()
+    
+    // Update displays every 500ms (0.5 seconds)
+    If currentTime - lastUpdateTime >= 500.0 Then
+        UpdateTimeDisplay()
+        UpdateBPMDisplay()
+        lastUpdateTime = currentTime
+    End
+End
