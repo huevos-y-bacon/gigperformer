@@ -12,43 +12,9 @@ Var lastUpdateTime : double  // Track when we last updated the display
 // Function to update the time display
 Function UpdateTimeDisplay()
     Var timeString : String
-    Var timeInSeconds : double
-    Var totalHours, hours, minutes : integer
-    Var hoursStr, minutesStr : String
     
-    // Get current time in milliseconds and convert to seconds
-    timeInSeconds = ClockTime() / 1000.0
-    
-    // Calculate total hours since reference point
-    totalHours = Floor(timeInSeconds / 3600.0)
-    
-    // Get current hour of day (0-23) and add 1 hour offset for timezone
-    // hours = totalHours - ((totalHours / 24) * 24) + 1 // SUMMER TIME
-    hours = totalHours - ((totalHours / 24) * 24) + 0 // WINTER TIME
-    
-    // Handle hour wrap-around (if we go past 23, wrap to 0)
-    If hours >= 24 Then
-        hours = hours - 24
-    End
-    
-    // Calculate minutes
-    minutes = Floor((timeInSeconds - (totalHours * 3600)) / 60.0)
-    
-    // Format each component with leading zeros
-    If hours < 10 Then
-        hoursStr = "0" + IntToString(hours)
-    Else
-        hoursStr = IntToString(hours)
-    End
-    
-    If minutes < 10 Then
-        minutesStr = "0" + IntToString(minutes)
-    Else
-        minutesStr = IntToString(minutes)
-    End
-    
-    // Build final time string (HH:MM format)
-    timeString = hoursStr + ":" + minutesStr
+    // Use the system clock formatting so local timezone and BST are handled automatically
+    timeString = FormatTime(ClockTime(), "%H:%M")
     SetWidgetLabel(TimeDisplay, timeString)
 End
 
