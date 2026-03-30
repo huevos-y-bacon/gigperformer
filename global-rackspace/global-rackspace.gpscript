@@ -1,0 +1,81 @@
+// Gig Performer Global GPScript - Toggle Song Lyrics/Chords Window with Widget + Time Display
+
+// Declare widget variables
+Var LyricsButton : Widget // Built-in Song Lyrics/Chords
+Var TimeDisplay : Widget  // Time display widget
+Var BPMDisplay : Widget   // BPM display widget
+
+// Variable to track the current state of the lyrics window
+Var lyricsWindowOpen : Boolean
+Var lastUpdateTime : double  // Track when we last updated the display
+
+// Function to update the time display
+Function UpdateTimeDisplay()
+    Var timeString : String
+    
+    // Use the system clock formatting so local timezone and BST are handled automatically
+    timeString = FormatTime(ClockTime(), "%H:%M")
+    SetWidgetLabel(TimeDisplay, timeString)
+End
+
+// Function to update the BPM display
+Function UpdateBPMDisplay()
+    Var currentBPM : double
+    Var bpmString : String
+    
+    // Get current BPM value
+    currentBPM = GetBPM()
+    
+    // Format BPM with 1 decimal place
+    // bpmString = "BPM: " + DoubleToString(currentBPM, 1)
+    bpmString = DoubleToString(currentBPM, 1)
+    
+    SetWidgetLabel(BPMDisplay, bpmString)
+End
+Function ToggleLyrics()
+    If lyricsWindowOpen Then
+        // Close the window
+        ShowChordProWindow(false)
+        lyricsWindowOpen = false
+    Else
+        // Open the window
+        ShowChordProWindow(true)
+        lyricsWindowOpen = true
+    End
+End
+
+// Initialization - set initial state
+Initialization
+    lyricsWindowOpen = false
+    lastUpdateTime = TimeSinceStartup()
+    
+    // Start the global timer system
+    SetTimersRunning(true)
+    
+    UpdateTimeDisplay()  // Initialize time display
+    UpdateBPMDisplay()   // Initialize BPM display
+End
+
+// Callback when the lyrics button widget is activated
+On WidgetValueChanged(newValue : double) from LyricsButton
+    // Toggle the lyrics window when button is pressed (newValue > 0)
+    If newValue > 0.0 Then
+        ToggleLyrics()
+    End
+    // Update displays when any widget interaction happens
+    UpdateTimeDisplay()
+    UpdateBPMDisplay()
+End
+
+// Timer callback - called every ~50ms by GP
+On TimerTick(ms : double)
+    Var currentTime : double
+    currentTime = TimeSinceStartup()
+    
+    // Update displays every 500ms (0.5 seconds)
+    If currentTime - lastUpdateTime >= 500.0 Then
+        UpdateTimeDisplay()
+        UpdateBPMDisplay()
+        lastUpdateTime = currentTime
+    End
+End
