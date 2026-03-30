@@ -1,0 +1,35 @@
+{
+  "name": "gpscript-language",
+  "displayName": "GPScript Language Support",
+  "description": "Syntax highlighting and language configuration for Gig Performer GPScript.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "gpscript",
+        "aliases": [
+          "GPScript",
+          "gpscript"
+        ],
+        "extensions": [
+          ".gpscript"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "gpscript",
+        "scopeName": "source.gpscript",
+        "path": "./syntaxes/gpscript.tmLanguage.json"
+      }
+    ]
+  }
+}

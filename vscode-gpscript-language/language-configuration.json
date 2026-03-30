@@ -1,0 +1,88 @@
+{
+  "$schema": "vscode://schemas/language-configuration",
+  "brackets": [
+    [
+      "{",
+      "}"
+    ],
+    [
+      "[",
+      "]"
+    ],
+    [
+      "(",
+      ")"
+    ]
+  ],
+  "autoClosingPairs": [
+    {
+      "open": "{",
+      "close": "}"
+    },
+    {
+      "open": "[",
+      "close": "]"
+    },
+    {
+      "open": "(",
+      "close": ")"
+    },
+    {
+      "open": "\"",
+      "close": "\"",
+      "notIn": [
+        "string",
+        "comment"
+      ]
+    }
+  ],
+  "surroundingPairs": [
+    [
+      "{",
+      "}"
+    ],
+    [
+      "[",
+      "]"
+    ],
+    [
+      "(",
+      ")"
+    ],
+    [
+      "\"",
+      "\""
+    ]
+  ],
+  "indentationRules": {
+    "increaseIndentPattern": "^\\s*((?:[Ff]unction|[Oo]n|[Ii]nitialization)\\b.*|[Ii]f\\b.*\\b[Tt]hen\\b.*|[Ee]lse\\b.*|[Ff]or\\b.*\\b[Dd]o\\b.*|[Ww]hile\\b.*\\b[Dd]o\\b.*|[Ss]elect\\b.*|[Cc]ase\\b.*)\\s*$",
+    "decreaseIndentPattern": "^\\s*([Ee]nd|[Ee]lse|[Cc]ase)\\b.*$"
+  },
+  "onEnterRules": [
+    {
+      "beforeText": "^\\s*((?:[Ff]unction|[Oo]n|[Ii]nitialization)\\b.*|[Ii]f\\b.*\\b[Tt]hen\\b.*|[Ee]lse\\b.*|[Ff]or\\b.*\\b[Dd]o\\b.*|[Ww]hile\\b.*\\b[Dd]o\\b.*|[Ss]elect\\b.*|[Cc]ase\\b.*)$",
+      "action": {
+        "indent": "indent"
+      }
+    },
+    {
+      "beforeText": "^\\s*[Ee]nd\\b.*$",
+        "indent": "outdent"
+        "indent": "none"
+    },
+    {
+      "beforeText": "^\\s*[Ee]lse\\b.*$",
+      "action": {
+        "indent": "indent"
+      }
+      }
+    }
+  },
+  "folding": {
+    "markers": {
+      "start": "^\\s*([Ff]unction\\b|[Oo]n\\b|[Ii]nitialization\\b|[Ii]f\\b.*\\b[Tt]hen\\b|[Ff]or\\b.*\\b[Dd]o\\b|[Ww]hile\\b.*\\b[Dd]o\\b|[Ss]elect\\b)",
+      "end": "^\\s*[Ee]nd\\b"
+    }
+  },
+  "wordPattern": "(-?\\d*\\.\\d\\w*)|([A-Za-z_][A-Za-z0-9_]*)"
+}
