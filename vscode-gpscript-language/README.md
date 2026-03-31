@@ -30,6 +30,18 @@ Docs:
 4. Select folder: `vscode-gpscript-language`
 5. Re-open any `.gpscript` file.
 
+## Local Install Script (CLI)
+
+If you prefer command-line install:
+
+1. From `vscode-gpscript-language`, run: `npm run install:local`
+2. This will package the extension as a `.vsix` and install it via `code --install-extension`.
+
+Notes:
+
+- Requires Node.js/npm.
+- Requires VS Code CLI (`code`) in your PATH.
+
 If language mode does not switch automatically, run `Change Language Mode` and select `GPScript`.
 
 ## Optional: Stronger Token Colors
