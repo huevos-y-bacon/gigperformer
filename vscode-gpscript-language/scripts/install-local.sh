@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# This script packages the extension as a VSIX file and installs it locally using the VS Code CLI.
+# This script packages the extension as a VSIX file and installs it locally using the VS Code CLI. This was only tested on macOS (15.7.4)
 
 set -euo pipefail
 
